@@ -1,4 +1,21 @@
-# Use Python 3.11 slim image
+# Multi-stage build: Frontend build stage
+FROM node:20-alpine AS frontend-build
+
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package*.json ./frontend/
+
+# Install dependencies
+RUN cd frontend && npm ci
+
+# Copy source code
+COPY frontend/ ./frontend/
+
+# Build the frontend
+RUN cd frontend && npm run build
+
+# Backend stage
 FROM python:3.11-slim
 
 # Install uv
@@ -14,8 +31,8 @@ RUN uv pip install --system -r backend/pyproject.toml
 # Copy application code
 COPY backend/app/ ./backend/app/
 
-# Create static directory for frontend files
-RUN mkdir -p backend/app/static
+# Copy built frontend files to static directory
+COPY --from=frontend-build /app/frontend/dist ./backend/app/static
 
 # Expose port
 EXPOSE 8000
