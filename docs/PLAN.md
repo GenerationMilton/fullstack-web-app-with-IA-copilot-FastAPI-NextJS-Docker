@@ -1,6 +1,8 @@
 # Detailed Project Plan
 
-This document outlines the complete implementation plan for the Project Management MVP web app. Each part includes detailed substeps as checklists, testing requirements (with 80% minimum unit test coverage and robust integration testing), and success criteria.
+This document outlines the complete implementation plan for the Project Management MVP web app. Each part includes detailed substeps as checklists, testing requirements, and success criteria.
+
+> Testing guidance updated: aim for 80% unit test coverage as a sensible target, but don’t add low-value tests just to hit a number; prioritize valuable coverage and practical quality over strict percentage gates.
 
 ## Part 1: Planning and Documentation
 
