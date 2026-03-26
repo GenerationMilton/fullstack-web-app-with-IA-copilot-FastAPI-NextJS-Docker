@@ -43,4 +43,12 @@ describe("KanbanBoard", () => {
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
   });
+
+  it("calls onLogout when logout button is clicked", async () => {
+    const onLogout = vi.fn();
+    render(<KanbanBoard onLogout={onLogout} />);
+    const logoutButton = screen.getByRole("button", { name: /logout/i });
+    await userEvent.click(logoutButton);
+    expect(onLogout).toHaveBeenCalled();
+  });
 });
