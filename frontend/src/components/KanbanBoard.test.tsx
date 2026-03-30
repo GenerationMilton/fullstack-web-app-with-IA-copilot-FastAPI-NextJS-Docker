@@ -117,11 +117,11 @@ describe("KanbanBoard", () => {
     await screen.findAllByTestId(/column-/i);
 
     await userEvent.type(
-      screen.getByPlaceholderText(/Try: Move 2 cards from Backlog to In Progress/i),
+      screen.getByRole("textbox", { name: /AI prompt/i }),
       "Move card-1 to Done"
     );
 
-    await userEvent.click(screen.getByRole("button", { name: /ask ai/i }));
+    await userEvent.click(screen.getByRole("button", { name: /send to ai/i }));
 
     await waitFor(() => expect(screen.getByText(/AI update applied/i)).toBeInTheDocument());
 

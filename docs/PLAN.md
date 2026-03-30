@@ -247,13 +247,24 @@ This document outlines the complete implementation plan for the Project Manageme
 ## Part 10: AI Chat UI Integration
 
 ### Substeps:
-- [ ] Design and implement sidebar chat widget
-- [ ] Add chat input and message display components
-- [ ] Integrate with backend AI chat endpoint
-- [ ] Implement real-time board updates when AI modifies Kanban
-- [ ] Add loading states and error handling for chat
-- [ ] Style chat widget to match app design
-- [ ] Test full AI chat user experience
+- [x] Design and implement sidebar chat widget (`AIChatWidget`)
+- [x] Add chat input and message display components
+- [x] Integrate with backend AI chat endpoint
+- [x] Implement real-time board updates when AI modifies Kanban
+- [x] Add loading states and error handling for chat
+- [x] Style chat widget to match app design
+- [x] Test full AI chat user experience
+
+### Notes:
+- New component `frontend/src/components/AIChatWidget.tsx` handles prompt, conversation history, response, and errors.
+- `KanbanBoard` renders chat sidebar and passes board data + update callback.
+- AI send returns `updates` via `/api/chat`; `KanbanBoard` applies updates and persists.
+- Spinner/button disables while backend chat is resolving.
+
+### Tests:
+- `frontend/src/components/AIChatWidget.test.tsx`: UI-like behavior with fake fetch
+- `frontend/src/components/KanbanBoard.test.tsx`: AI workflow verifies board update application
+
 
 ### Tests:
 - Unit tests for chat components (80%+ coverage)
