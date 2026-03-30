@@ -89,21 +89,24 @@ async def update_board(request: BoardUpdate, db: Session = Depends(get_db)):
     if not board:
         raise HTTPException(status_code=404, detail="Board not found")
 
-    # Update columns
+    # Update columns and card relationships
     for col_data in request.columns:
         col = db.query(Column).filter_by(id=col_data.id, board_id=board.id).first()
-        if col:
-            col.title = col_data.title
-            col.position = col_data.position
+        if not col:
+            continue
 
-    # Update cards
-    for card_id, card_data in request.cards.items():
-        card = db.query(Card).filter_by(id=card_id).first()
-        if card:
+        col.title = col_data.title
+        col.position = col_data.position
+
+        for card_index, card_data in enumerate(col_data.cards):
+            card = db.query(Card).filter_by(id=card_data.id).first()
+            if not card:
+                continue
+
             card.title = card_data.title
             card.details = card_data.details
-            card.position = card_data.position
-            card.column_id = card_data.id
+            card.position = card_index
+            card.column_id = col.id
 
     db.commit()
     return board

@@ -151,13 +151,17 @@ This document outlines the complete implementation plan for the Project Manageme
 ## Part 7: Frontend-Backend Integration
 
 ### Substeps:
-- [ ] Replace frontend mock data with API calls
-- [ ] Implement authentication flow with backend
-- [ ] Add API client functions for all board operations
-- [ ] Update KanbanBoard to use real data from backend
-- [ ] Handle loading states and error cases
-- [ ] Implement optimistic updates for better UX
-- [ ] Test data persistence across sessions
+- [x] Replace frontend mock data with API calls
+- [x] Implement authentication flow with backend
+- [x] Add API client functions for all board operations
+- [x] Update KanbanBoard to use real data from backend
+- [x] Handle loading states and error cases
+- [x] Implement optimistic updates for better UX
+- [x] Test data persistence across sessions
+- Notes: 
+  - `src/lib/api.ts` now converts backend `BoardResponse` into local `BoardData` and builds `BoardUpdate` payloads.
+  - `KanbanBoard` initializes from `/api/board`, persists changes with `/api/board` on drag/add/delete/rename, and falls back to local data with error banner.
+  - `auth.login` now calls `/api/login` and uses localStorage for session state.
 
 ### Tests:
 - Unit tests for API client functions (80%+ coverage)
