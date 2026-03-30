@@ -5,7 +5,17 @@ from sqlalchemy.orm import Session
 import os
 
 from app.database import init_db, get_session_factory, User, Board, Column, Card
-from app.schemas import LoginRequest, LoginResponse, BoardResponse, BoardUpdate, ColumnResponse, CardResponse
+from app.schemas import (
+    LoginRequest,
+    LoginResponse,
+    BoardResponse,
+    BoardUpdate,
+    ColumnResponse,
+    CardResponse,
+    ChatRequest,
+    ChatResponse,
+)
+from app.ai_service import send_chat_request, AIServiceError
 
 app = FastAPI(title="Kanban Backend", version="0.1.0")
 
@@ -110,6 +120,16 @@ async def update_board(request: BoardUpdate, db: Session = Depends(get_db)):
 
     db.commit()
     return board
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """Send user prompt to OpenRouter AI and return answer."""
+    try:
+        response = send_chat_request(request)
+        return response
+    except AIServiceError as err:
+        raise HTTPException(status_code=502, detail=str(err))
 
 
 @app.get("/", response_class=HTMLResponse)

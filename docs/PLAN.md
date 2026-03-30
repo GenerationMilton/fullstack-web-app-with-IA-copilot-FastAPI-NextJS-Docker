@@ -181,12 +181,19 @@ This document outlines the complete implementation plan for the Project Manageme
 ## Part 8: AI Connectivity Setup
 
 ### Substeps:
-- [ ] Install OpenRouter Python client
-- [ ] Implement basic AI service class
-- [ ] Create test endpoint that calls AI with "2+2" and verifies response
-- [ ] Configure OpenRouter API key from environment
-- [ ] Add error handling for AI API failures
-- [ ] Test connectivity and response parsing
+- [x] Install OpenRouter Python client (via `httpx` + OpenRouter REST API)
+- [x] Implement basic AI service class
+- [x] Create test endpoint that calls AI with "2+2" and verifies response
+- [x] Configure OpenRouter API key from environment
+- [x] Add error handling for AI API failures
+- [x] Test connectivity and response parsing
+
+### Notes:
+- Added `/api/chat` in `backend/app/main.py`, uses `app/ai_service.py`.
+- Chat endpoint accepts `{ prompt, history }`, invalid/missing API key gives 502.
+- `app/ai_service.py` calls `https://api.openrouter.ai/v1/chat/completions` with model `openai/gpt-oss-120b`, expects OpenRouter response.
+- `backend/tests/test_api.py` includes integration test with real key (`OPENROUTER_API_KEY`) but skips when missing.
+
 
 ### Tests:
 - Unit tests for AI service class (80%+ coverage)

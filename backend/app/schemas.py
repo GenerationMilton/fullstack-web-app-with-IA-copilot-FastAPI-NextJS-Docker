@@ -52,3 +52,13 @@ class BoardResponse(BaseModel):
 class BoardUpdate(BaseModel):
     columns: list[ColumnResponse]
     cards: dict[str, CardCreate]
+
+
+class ChatRequest(BaseModel):
+    prompt: str
+    history: list[str] = []
+
+
+class ChatResponse(BaseModel):
+    model: str
+    reply: str
