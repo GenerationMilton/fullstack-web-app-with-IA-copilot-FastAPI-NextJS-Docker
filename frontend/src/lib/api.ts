@@ -20,6 +20,18 @@ export type ApiBoardResponse = {
   columns: ApiColumn[];
 };
 
+export type ApiChatRequest = {
+  prompt: string;
+  history: string[];
+  board?: ApiBoardResponse;
+};
+
+export type ApiChatResponse = {
+  model: string;
+  reply: string;
+  updates?: ApiBoardResponse;
+};
+
 export const normalizeBoard = (payload: ApiBoardResponse): BoardData => {
   const columns: Column[] = payload.columns
     .slice()
@@ -96,4 +108,19 @@ export const saveBoard = async (board: BoardData): Promise<void> => {
   if (!response.ok) {
     throw new Error("Failed to save board");
   }
+};
+
+export const sendChat = async (request: ApiChatRequest): Promise<ApiChatResponse> => {
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Chat request failed: ${response.status} ${errText}`);
+  }
+
+  return (await response.json()) as ApiChatResponse;
 };

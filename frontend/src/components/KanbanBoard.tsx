@@ -19,7 +19,7 @@ import {
   moveCard,
   type BoardData,
 } from "@/lib/kanban";
-import { fetchBoard, saveBoard } from "@/lib/api";
+import { fetchBoard, saveBoard, sendChat, normalizeBoard, type ApiChatResponse } from "@/lib/api";
 
 interface KanbanBoardProps {
   onLogout?: () => void;
@@ -30,6 +30,10 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [aiPrompt, setAiPrompt] = useState<string>("");
+  const [aiHistory, setAiHistory] = useState<string[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiReply, setAiReply] = useState<string>("");
 
   useEffect(() => {
     let mounted = true;
@@ -66,6 +70,74 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
     } catch (err) {
       console.error("Failed to sync board", err);
       setError("Failed to save board updates. Changes are local only.");
+    }
+  };
+
+  const boardToApiPayload = () => ({
+    id: 1,
+    title: "User Board",
+    columns: board.columns.map((column, columnIndex) => ({
+      id: column.id,
+      title: column.title,
+      position: columnIndex,
+      cards: column.cardIds.map((cardId, cardIndex) => ({
+        id: cardId,
+        title: board.cards[cardId]?.title ?? "",
+        details: board.cards[cardId]?.details ?? "",
+        position: cardIndex,
+      })),
+    })),
+  });
+
+  const applyBoardUpdates = async (updates: { columns: any[] } | undefined) => {
+    if (!updates || !Array.isArray(updates.columns)) {
+      return;
+    }
+
+    try {
+      const normalized = normalizeBoard({
+        id: 1,
+        title: "User Board",
+        columns: updates.columns,
+      });
+
+      setBoard(normalized);
+      await persistBoard(normalized);
+    } catch (err) {
+      console.warn("Invalid AI board updates, ignoring", err);
+    }
+  };
+
+  const handleAiQuery = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt) return;
+
+    setAiLoading(true);
+    setError("");
+
+    try {
+      const response = await sendChat({
+        prompt,
+        history: aiHistory,
+        board: boardToApiPayload(),
+      });
+
+      setAiReply(response.reply);
+      setAiHistory((prev) => [...prev, `Q: ${prompt}`, `A: ${response.reply}`]);
+      setAiPrompt("");
+
+      if (response.updates) {
+        await applyBoardUpdates(response.updates);
+      }
+    } catch (err) {
+      console.error("AI query failed", err);
+      setError(
+        err instanceof Error
+          ? `AI query failed: ${err.message}`
+          : "AI query failed"
+      );
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -216,6 +288,39 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
             {error}
           </div>
         ) : null}
+
+        <section className="mx-auto mb-4 max-w-5xl rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-[var(--shadow)]">
+          <h2 className="text-sm font-semibold text-[var(--navy-dark)]">AI Assistant</h2>
+          <p className="mb-2 text-xs text-[var(--gray-text)]">
+            Ask the AI to suggest changes for your board. Replies may include structured updates.
+          </p>
+          <div className="flex flex-col gap-2">
+            <textarea
+              className="min-h-[72px] w-full rounded-lg border p-2"
+              value={aiPrompt}
+              placeholder="Try: Move 2 cards from Backlog to In Progress"
+              onChange={(e) => setAiPrompt(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="rounded-full bg-[var(--primary-blue)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                disabled={aiLoading}
+                onClick={handleAiQuery}
+              >
+                {aiLoading ? "Asking AI..." : "Ask AI"}
+              </button>
+              <span className="text-xs text-[var(--gray-text)]">
+                {aiHistory.length} messages in history
+              </span>
+            </div>
+            {aiReply ? (
+              <div className="rounded-lg border border-[var(--stroke)] bg-[var(--surface)] p-3 text-sm">
+                <strong>AI:</strong> {aiReply}
+              </div>
+            ) : null}
+          </div>
+        </section>
 
         <DndContext
           sensors={sensors}

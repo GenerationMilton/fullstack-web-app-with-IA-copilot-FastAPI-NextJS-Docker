@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import Optional, Any
 
 
 # Auth Models
@@ -57,8 +57,10 @@ class BoardUpdate(BaseModel):
 class ChatRequest(BaseModel):
     prompt: str
     history: list[str] = []
+    board: Optional[Any] = None
 
 
 class ChatResponse(BaseModel):
     model: str
     reply: str
+    updates: Optional[Any] = None

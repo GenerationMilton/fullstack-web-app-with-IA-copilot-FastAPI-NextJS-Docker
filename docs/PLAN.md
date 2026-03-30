@@ -211,13 +211,24 @@ This document outlines the complete implementation plan for the Project Manageme
 ## Part 9: AI Chat with Structured Outputs
 
 ### Substeps:
-- [ ] Extend AI service to accept Kanban JSON + user question + history
-- [ ] Define Structured Output schema for AI responses (user message + optional board updates)
-- [ ] Implement conversation history management
-- [ ] Create backend endpoint for AI chat
-- [ ] Parse AI structured responses and apply board updates
-- [ ] Add validation for AI-generated board changes
-- [ ] Test various AI interaction scenarios
+- [x] Extend AI service to accept Kanban JSON + user question + history
+- [x] Define Structured Output schema for AI responses (user message + optional board updates)
+- [x] Implement conversation history management
+- [x] Create backend endpoint for AI chat
+- [x] Parse AI structured responses and apply board updates
+- [x] Add validation for AI-generated board changes
+- [x] Test various AI interaction scenarios
+
+### Notes:
+- `ChatRequest` now includes `board`; `ChatResponse` includes optional `updates`.
+- `app/ai_service.py` now instructs model to emit JSON and attempts parse it.
+- `/api/chat` processes structured output and returns `reply` & `updates`.
+- `KanbanBoard` now includes minimal AI prompt UI and applies returned `updates` using `normalizeBoard`.
+- Tests:
+  - `backend/tests/test_api.py`: `/api/chat` 502 without key; optional real OpenRouter test with key
+  - `backend/tests/test_ai_service.py`: function-level AI output parsing
+  - `frontend/src/components/KanbanBoard.test.tsx`: creates/uses AI path and verifies board update application.
+
 
 ### Tests:
 - Unit tests for AI response parsing and board update logic (80%+ coverage)

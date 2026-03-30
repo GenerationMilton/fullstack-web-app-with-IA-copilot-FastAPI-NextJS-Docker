@@ -6,8 +6,8 @@ const getFirstColumn = async () => (await screen.findAllByTestId(/column-/i))[0]
 
 describe("KanbanBoard", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn((url) => {
-      if (url === "/api/board") {
+    vi.stubGlobal("fetch", vi.fn((url, options) => {
+      if (url === "/api/board" && (!options || options.method === "GET")) {
         return Promise.resolve({
           ok: true,
           json: async () => ({
@@ -28,8 +28,36 @@ describe("KanbanBoard", () => {
         }) as Response;
       }
 
-      if (url === "/api/board" && typeof (globalThis.fetch as any).mockImplementationOnce === "function") {
+      if (url === "/api/board" && options?.method === "PUT") {
         return Promise.resolve({ ok: true }) as Response;
+      }
+
+      if (url === "/api/chat" && options?.method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            model: "openai/gpt-oss-120b",
+            reply: "AI update applied",
+            updates: {
+              id: 1,
+              title: "My Kanban Board",
+              columns: [
+                {
+                  id: "col-backlog",
+                  title: "Backlog",
+                  position: 0,
+                  cards: [],
+                },
+                {
+                  id: "col-done",
+                  title: "Done",
+                  position: 1,
+                  cards: [{ id: "card-1", title: "One", details: "x", position: 0 }],
+                },
+              ],
+            },
+          }),
+        }) as Response;
       }
 
       return Promise.reject(new Error("Unhandled fetch"));
@@ -82,5 +110,22 @@ describe("KanbanBoard", () => {
     const logoutButton = screen.getByRole("button", { name: /logout/i });
     await userEvent.click(logoutButton);
     expect(onLogout).toHaveBeenCalled();
+  });
+
+  it("can ask AI and apply board updates", async () => {
+    render(<KanbanBoard />);
+    await screen.findAllByTestId(/column-/i);
+
+    await userEvent.type(
+      screen.getByPlaceholderText(/Try: Move 2 cards from Backlog to In Progress/i),
+      "Move card-1 to Done"
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /ask ai/i }));
+
+    await waitFor(() => expect(screen.getByText(/AI update applied/i)).toBeInTheDocument());
+
+    expect(screen.getAllByTestId(/column-/i)).toHaveLength(2);
+    expect(screen.getByText("Done")).toBeInTheDocument();
   });
 });

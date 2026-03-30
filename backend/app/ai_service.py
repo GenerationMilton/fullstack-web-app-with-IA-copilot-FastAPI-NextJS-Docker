@@ -1,5 +1,6 @@
+import json
 import os
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -14,7 +15,7 @@ class AIServiceError(Exception):
 
 
 def send_chat_request(request: ChatRequest) -> ChatResponse:
-    """Send a chat request to OpenRouter and return response text."""
+    """Send a chat request to OpenRouter and return response with structured output."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         raise AIServiceError("OPENROUTER_API_KEY is not set")
@@ -41,20 +42,44 @@ def send_chat_request(request: ChatRequest) -> ChatResponse:
             raise AIServiceError(f"OpenRouter API error {resp.status_code}: {resp.text}")
 
         data = resp.json()
-        content = _extract_response_content(data)
 
-        return ChatResponse(reply=content, model=data.get("model", OPENROUTER_MODEL))
+        model = data.get("model", OPENROUTER_MODEL)
+        content = _extract_response_content(data)
+        return _parse_structured_response(content, model)
     except httpx.RequestError as exc:
         raise AIServiceError(f"OpenRouter request failed: {str(exc)}")
 
 
-def _build_messages(request: ChatRequest) -> List[dict]:
-    messages = []
+def _build_messages(request: ChatRequest) -> List[Dict[str, Any]]:
+    system_prompt = (
+        "You are a Kanban board assistant. "
+        "You receive user prompts and optionally a board snapshot. "
+        "Generate a JSON object with keys: 'reply' (text) and optional 'updates' (board object) in the response message. "
+        "If no board update is needed, send only 'reply'."
+    )
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    if request.board is not None:
+        try:
+            board_json = json.dumps(request.board)
+        except (TypeError, ValueError):
+            board_json = "{}"
+
+        messages.append({
+            "role": "user",
+            "content": f"Current board state: {board_json}",
+        })
+
     if request.history:
         for item in request.history:
             messages.append({"role": "user", "content": item})
 
-    messages.append({"role": "user", "content": request.prompt})
+    messages.append({
+        "role": "user",
+        "content": "User question: " + request.prompt,
+    })
+
     return messages
 
 
@@ -73,3 +98,18 @@ def _extract_response_content(response_json: dict) -> str:
         raise AIServiceError("OpenRouter response message content empty")
 
     return content.strip()
+
+
+def _parse_structured_response(content: str, model: str) -> ChatResponse:
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        return ChatResponse(model=model, reply=content)
+
+    reply = parsed.get("reply")
+    updates = parsed.get("updates")
+
+    if not isinstance(reply, str) or not reply.strip():
+        reply = content
+
+    return ChatResponse(model=model, reply=reply.strip(), updates=updates)
